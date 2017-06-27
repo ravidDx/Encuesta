@@ -1,0 +1,39 @@
+body {
+  padding-top: 80px;
+  padding-bottom: 40px;
+  background-color: #eee;
+  font-family: mv boli;
+  color: #383D5A;
+}
+
+#logo{
+    height: 200%;
+    margin-top: -7%;
+    margin-left: -7%;
+}
+
+.form-signin {
+  max-width: 330px;
+  padding: 15px;
+  margin: 0 auto;
+}
+
+.form-signin .form-control {
+  position: relative;
+  height: auto;
+  -webkit-box-sizing: border-box;
+     -moz-box-sizing: border-box;
+          box-sizing: border-box;
+  padding: 10px;
+  font-size: 16px;
+}
+
+#btnIniciarSesion {
+    display: block;
+    width: 100%;
+}
+
+h2{
+    color: #C65E6A;
+    font-family: SEGOE PRINT;
+}
