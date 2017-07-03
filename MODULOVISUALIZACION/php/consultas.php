@@ -1,210 +1,90 @@
-<?php
 
+<?php
+// Exportar libreria
+require("../vendor/autoload.php");
+
+//Variable que se usara como Global
+$coleccionClientes = [];
 
 if($_POST){
-    $idActividad = $_POST['idActividad'];
 
-    echo "idActividad: ".$idActividad."<br>";
- 
-    // Get cURL resource
-    $curl = curl_init();
-    // Set some options - we are passing in a useragent too here
-    curl_setopt_array($curl, array(
-        CURLOPT_RETURNTRANSFER => 1,
-        CURLOPT_URL => 'http://cobroalpasosails.herokuapp.com/Actividad/?id='.$idActividad,
-        CURLOPT_USERAGENT => 'Codular Sample cURL Request'
-    ));
-    // Send the request & save response to $resp
-    $actividad = curl_exec($curl);
-    // Close request to clear up some resources
-    curl_close($curl);
+    $idPregunta = $_POST['_idPregunta']; 
+    echo 'Pregunta id '.$idPregunta.'<br>';
+    searchRespuestas($idPregunta); //Metodo que busca las respuestas de cada pregunta
 
-    //print_r(gettype($resp));
-    //var_dump($actividad);
-    $act = json_decode($actividad, true);
-    $preguntas = $act['ac_preguntas'];
+    //Guardamos los datos en un array
 
+    //Devolvemos el array pasado a JSON como objeto
+    //echo json_encode($coleccionClientes, JSON_FORCE_OBJECT);
 
-    echo "# preguntas: ".count($preguntas)."<br>";
-
-    foreach($preguntas as $key => $value)
-    {
-        echo "Pregunta  -->".$value['pr_pregunta']."<br>"; // Su valor      
-        echo "Tipo Pregunta -->".$value['pr_tipoPregunta']."<br>"; // Su valor      
-        echo "id -->".$value['id']."<br>"; // Su valor        
-        //echo "--->>>".$value[]."<br>"; // Su valor
-
-        searchRespuestas($value['id']);
-    }
-
-
-
-
-
-
-
-
-  
-
-
-
-
-    //print_r($preguntas->pr_pregunta);
-
-    //var_dump($preguntas);
-    print_r("//");
-    //var_dump($preguntas->pr_pregunta);
-
-    //print_r($act['ac_preguntas']);
-
-    // Get cURL resource
-    $curl = curl_init();
-    curl_setopt_array($curl, array(
-        CURLOPT_RETURNTRANSFER => 1,
-        CURLOPT_URL => 'http://cobroalpasosails.herokuapp.com/ActividadSitio/?as_tieneactividad='.$idActividad,
-        CURLOPT_USERAGENT => 'Codular Sample cURL Request'
-    ));
-    $resp = curl_exec($curl);
-    curl_close($curl);
-
-    $actSitio = json_decode($resp, true);
-
-    foreach ($actSitio as $ac){
-
-        $curl = curl_init();
-        curl_setopt_array($curl, array(
-            CURLOPT_RETURNTRANSFER => 1,
-            CURLOPT_URL => 'http://cobroalpasosails.herokuapp.com/ClienteActividadSitio/?cas_actividadsitio='.$ac['id'],
-            CURLOPT_USERAGENT => 'Codular Sample cURL Request'
-        ));
-        //        $cas = curl_exec($curl) or die(curl_error($curl)); ;
-
-        if( ! $cas = curl_exec($curl)) 
-        { 
-            trigger_error(curl_error($curl)); 
-        }
-
-        // Close request to clear up some resources
-        curl_close($curl);
-
-        //    echo 'ESto es un ARRAY';
-        //    echo ($cas);
-        //    echo '<br>';
-
-        //        echo $cas.'<br>';
-
-
-        if($cas === "[]"){
-            echo 'asd';
-        }else{
-            asd($cas, $preguntas);
-        }
-
-    }
-
-}
-
-
-
-function searchActividad(){
+    var_dump($coleccionClientes);
 
 }
 
 
 
 
-function searchRespuestas($idPregunta){
-    // Crea un nuevo recurso cURL
-    $curl = curl_init();
-    // Set some options - we are passing in a useragent too here
-    curl_setopt_array($curl, array(
-        CURLOPT_RETURNTRANSFER => 1,
-        CURLOPT_URL => 'http://cobroalpasosails.herokuapp.com/Pregunta/?id='.$idPregunta,
-        CURLOPT_USERAGENT => 'Codular Sample cURL Request'
-    ));
+
+
+//Metodo para buscar las respuestas de la pregunta escogida
+function searchRespuestas($idPregunta ){
+
+    /* Consumiendo servicio web con la API Guzzle */
+    /* ----------------------------------------------------------------------- */
+    $client = new GuzzleHttp\Client();
+    $res = $client->request('GET', 'http://cobroalpasosails.herokuapp.com/Pregunta/?id='.$idPregunta);
+    $pregunta = $res->getBody(); //recupera los datos de la solicitud
+    $preg = json_decode($pregunta, true);
+    $cantidadRespuestas = count($preg['pr_respuestas']);
+    $cantidadOpciones = count($preg['pr_opciones']);
+
+    $colecionRespuestas = $preg['pr_respuestas']; //almacena un arreglo de respuestas 
+    echo("Cantidad de respuesta: ");
+    echo($cantidadRespuestas.'<br>');
+    echo("Cantidad de opciones: ");
+    echo($cantidadOpciones.'<br>'.'<br>');
+    /* ----------------------------------------------------------------------- */
     
-    // Envia la peticiont & guarda la respuesta en $pregunta
-    $pregunta = curl_exec($curl);
-
-    // Cierra la peticion y limpia up some resources
-    curl_close($curl);
-
-     $preg = json_decode($pregunta, true);
-     $cantidadRespuestas = count($preg['pr_respuestas']);
-     $cantidadOpciones = count($preg['pr_opciones']);
-
-     $colecionRespuestas = $preg['pr_respuestas'];
-
-     echo("Cantidad de respuesta: ");
-     echo($cantidadRespuestas.'<br>');
-     echo("Cantidad de opciones: ");
-     echo($cantidadOpciones.'<br>'.'<br>');
-
-     if($cantidadRespuestas != 0){
-        echo "entro";
-        searchClienteRespuesta($colecionRespuestas);
-     }
-
+    if($cantidadRespuestas != 0){
+        echo "Buscar clientes de cada respuesta".'<br>';
+        searchClienteRespuesta($colecionRespuestas); //Metodo para buscar clientes de cada respuesta
+        echo '<br>';
+    }
      
-
 }
 
 
+//Metodo para buscar clientes de las respuestas de la pregunta escogida
 function searchClienteRespuesta($colecionRespuestas){
 
-    echo "REPUESTAS"."<br>";
-
+    $calificaciones = [];
     foreach($colecionRespuestas as $key => $value)
     {
-        echo "id Respuesta  -->".$value['id']."<br>"; // Su valor      
+        echo "id Respuesta  ----->".$value['id']."<br>"; // Su valor
 
-         // Crea un nuevo recurso cURL
-        $curl = curl_init();
-        // Set some options - we are passing in a useragent too here
-        curl_setopt_array($curl, array(
-            CURLOPT_RETURNTRANSFER => 1,
-            CURLOPT_URL => 'http://cobroalpasosails.herokuapp.com/Respuesta/?id='.$value['id'],
-            CURLOPT_USERAGENT => 'Codular Sample cURL Request'
-        ));
-        
-        // Envia la peticiont & guarda la respuesta en $pregunta
-        $cliente = curl_exec($curl);
+        /* Consumiendo servicio web con la API Guzzle */
+        /* ----------------------------------------------------------------------- */
+        $client = new GuzzleHttp\Client();
+        $res = $client->request('GET', 'http://cobroalpasosails.herokuapp.com/Respuesta/?id='.$value['id'] );
+        $respuesta = $res->getBody(); //recupera los datos de la solicitud
 
-        // Cierra la peticion y limpia up some resources
-        curl_close($curl);
+        $resp = json_decode($respuesta, true);
+        $idCliente = ($resp['re_pertenececas']['cas_cliente']);
+        echo "id Cliente: ".$idCliente."<br>"; // Su valor
 
-         $clien = json_decode($cliente, true);
-         $idCliente = ($clien['re_pertenececas']['cas_cliente']);
-         echo "id Cliente  -->".$idCliente."<br>"; // Su valor   
+        $request  = $client->request('GET', 'http://cobroalpasosails.herokuapp.com/Cliente/?id='.$idCliente );
+        $cliente = $request ->getBody(); //recupera los datos de la solicitud
 
+        $client = json_decode($cliente, true);
+        $nombre = $client['cl_nombre'];
+        $apellido = $client['cl_apellido'];
+        $correo = $client['cl_correo'];
+        echo " nombre: ".$nombre." " .$apellido ."<br>"; // Su valor   
+        echo " correo: ".$correo."<br>"; // Su valor     
 
-        $curl = curl_init();
-        // Set some options - we are passing in a useragent too here
-        curl_setopt_array($curl, array(
-            CURLOPT_RETURNTRANSFER => 1,
-            CURLOPT_URL => 'http://cobroalpasosails.herokuapp.com/Cliente/?id='.$idCliente,
-            CURLOPT_USERAGENT => 'Codular Sample cURL Request'
-        ));
-        
-        // Envia la peticiont & guarda la respuesta en $pregunta
-        $cliente = curl_exec($curl);
-
-        // Cierra la peticion y limpia up some resources
-        curl_close($curl);
-
-
-         $client = json_decode($cliente, true);
-         $nombre = $client['cl_nombre'];
-          $apellido = $client['cl_apellido'];
-             $correo = $client['cl_correo'];
-         echo " nombre  -->".$nombre." " .$apellido ."<br>"; // Su valor   
-         echo " correo  -->".$correo."<br>"; // Su valor   
-
-
-
-
-
-
+        /* ----------------------------------------------------------------------- */
+        global $coleccionClientes;
+        array_push ( $coleccionClientes,  $correo );
     }
 
 }

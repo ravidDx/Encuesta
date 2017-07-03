@@ -8,12 +8,38 @@
         <link href="css/bootstrap.min.css" rel="stylesheet">
         <link href="css/estilos.css" rel="stylesheet">
         <link href="css/d3.css" rel="stylesheet">
+
+        <style>
+        .chart div {font: 10px sans-serif; background-color: steelblue; text-align: right; padding: 3px; margin: 1px; color: white;}
+        </style>
+
+        <style>
+
+            .rect {
+              fill: steelblue;
+            }
+
+            .bar:hover {
+              fill: brown;
+            }
+
+            .axis--x path {
+              display: none;
+            }
+
+        </style>
+
+
+
     </head>
     <body>
         <script src="http://d3js.org/d3.v3.min.js"></script>
         <script src="http://labratrevenge.com/d3-tip/javascripts/d3.tip.v0.6.3.js"></script>
         <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
         <?php include('php/menu.php');?>
+
+        
+
         <div class="container-fluid">
             <div class="row">
                 <div class="col-md-10 col-md-offset-1">
@@ -26,12 +52,21 @@
                             <option value="">Seleccione...</option>
                         </select>
                         <button type="button" id="btnGenerar" class="btn btn-default">Generar</button>
-                        <svg></svg>
                     </div>
                 </div>
             </div>
 
         </div>
+
+        <div class="chart"></div>
+
+        <div class="container">
+            <div class="row">
+                <svg width="315" height="400"></svg>
+            </div>
+        </div>
+
+        
 
         <script src="js/bootstrap.min.js"></script>
         <script src="main/visualizacion.js"></script>

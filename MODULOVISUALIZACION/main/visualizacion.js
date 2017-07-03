@@ -1,19 +1,39 @@
 $(document).ready(function () {
 
-    getsession();  
+    getsession();
+
+    //Variables   
     var _proveedor;
     var _idProveedor; 
     var _registros= [];
+    var _preguntas = [];
+    var _respuestas = [];
+    var clientes = [];
+
+    var numeroRespuestas=0;
+    var generarGrafico=0;
+    var obteniendoActividades;
+    var obteniendoRespuestas;
+    var obteniendoClientes;
+
+    var datos = [];
+
+
+
 
     //Consulta ajax
     function getsession(){
-        $.ajax({url: "php/iniciosesion.php", dataType: "JSON", success: function(result){
-            console.log(result);			
-            _proveedor = result;
-            _idproveedor = result.id;
-            console.log(_idproveedor);
-            cargaActividad();
-        }});
+        $.ajax({
+            url: "php/iniciosesion.php", 
+            dataType: "JSON", 
+            success: function(result){
+                console.log(result);			
+                _proveedor = result;
+                _idproveedor = result.id;
+                console.log(_idproveedor);
+                cargaActividad();
+
+            }});
     };
 
     function cargaActividad(){
@@ -23,50 +43,155 @@ $(document).ready(function () {
         });
     }
 
-    var _preguntas = [];
 
     $('#btnGenerar').on('click', function(){
-        _preguntas = [];
+        _preguntas = []; //Vaciar el arreglo
         var id = $("#sel_actividades option:selected").val();
-        console.log(id);
-        if (jQuery.isEmptyObject(id) === false){
-            //            getActividad(id);
-            $.get(
-                'http://cobroalpasosails.herokuapp.com/Actividad',
-                {id: id}, 
-                function (pr) {
-                    //                    console.log(pr);
-                    $.each(pr.ac_preguntas, function (k, v) {
-                        _preguntas.push(v);
-                    });
-                    //                    _registros = [];
-                    getActividad(id);
-                }
-            ).fail(function(res){
-                alert("Error: " + res.getResponseHeader("error"));
-            });
-            console.log(_preguntas);
-        }
+        getActividad(id);
 
     });
 
-    function getActividad(idActividad){
-        $.ajax({
-            url: 'php/consultas.php',
-            type: 'POST',
-            //                dataType: 'json',
-            data: {"idActividad": idActividad}
-        }).done(function(msg) {
-            console.log("get Actividad");
-            console.log(msg);
+    //Funcion que obtiene la data de la actividad seleccionada
+    function getActividad(_idActividad){
+
+        obteniendoActividades = $.ajax({
+            url: "php/consultasActividad.php",
+            type: "POST",
+            dataType: 'json',
+            data: {"_idActividad": _idActividad}
+            }).done(function(respuesta){
+                if (respuesta.estado === 200) {
+                    console.log("estado Actividad: "+respuesta.estado);
+                    console.log("idActividad. "+_idActividad);
+                    _preguntas = respuesta.preguntas;
+                    console.log("# Preguntas: "+ _preguntas.length);
+                    console.dir(_preguntas);
+                    $.each(_preguntas, function (key, value) {
+                        _idPregunta = value.id;
+                        getRespuesta(_idPregunta);    
+                    });
+
+                }
+                      
+            });
+    
+    };
+
+    //Funcion que obtiene las respuestas de las preguntas de la actividad
+    function getRespuesta(_idPregunta){
+       obteniendoRespuestas = $.ajax({
+            url: "php/consultasRespuesta.php",
+            type: "POST",
+            dataType: 'json',
+            data: {"_idPregunta": _idPregunta}
+            }).done(function(respuesta){
+               if (respuesta.estado === 200) {
+                    console.log("estado Pregunta: "+respuesta.estado);
+                    console.log("cantidad Respuestas: "+respuesta.cantidadRespuestas);
+                    console.log("cantidad Opciones: "+respuesta.cantidadOpciones);
+                    console.dir(respuesta.coleccionRespuestas);
+                    $.each(respuesta.coleccionRespuestas, function (key, value) {
+                        _idRespuesta = value.id;
+                        getCliente(_idRespuesta);
+                        generarGrafico= generarGrafico+1;    
+                    });
+                }
+            });
+   
+    };
+
+    //Funcion que obtiene el cliente de cada respuesta de las preguntas de la actividad
+    function getCliente(_idRespuesta){
+
+        obteniendoClientes = $.ajax({
+                url: 'php/consultasCliente.php',
+                type: 'POST',
+                dataType: 'json',
+                data: {"_idRespuesta": _idRespuesta}
+            }).done(function(respuesta) {
+                if (respuesta.estado === 200) {
+                    
+                    console.log("estado Respuesta: "+respuesta.estado);
+                    console.log("id Cliente "+respuesta.idCliente);
+                    console.log("correo: "+respuesta.correo);
+                    console.log("cantidad Clientes: "+clientes.length);
+                    var objetoCliente = new Object();
+                    var nuevo = 1;
+                    
+                    $.each(clientes, function (key, value) {
+                        console.log("key: "+key);
+                        if(value.id == respuesta.idCliente){
+                            console.log("Actualizacion");
+                            clientes[key].calificacion = parseInt(clientes[key].calificacion) + 1;
+                            nuevo = 0;
+                            numeroRespuestas = numeroRespuestas+1;
+                            datos[key]= clientes[key].calificacion;
+                            return false;
+                        }else{
+                            nuevo = 1;
+                        }
+                    });
+
+                if(nuevo == 1){
+                    console.log("Nuevo");
+                    numeroRespuestas = numeroRespuestas+1;
+                    objetoCliente.id = respuesta.idCliente;
+                    objetoCliente.correo = respuesta.correo;
+                    objetoCliente.calificacion = 1;
+                    clientes.push(objetoCliente);
+                    datos.push(objetoCliente.calificacion);
+                }
+
+                console.dir("clientes");
+                console.dir(clientes);
+
+                console.log(generarGrafico +"  numResp. "+ numeroRespuestas);
+                if(numeroRespuestas == generarGrafico){
+                    console.log("<<<<<<<<<<<<<<<<<<<<<<<<<<<<< llego al final");
+                    graficarBarras();
+                }
+
+
+                 
+            }
+           
         });
+
     }
 
-    var _data = [];
+    function graficarBarras(){
+        console.log("Graficando Barras");
+        console.log(datos);
+         var datos = [200,20,4,1];
+          var config = { columnWidth: 45, columnGap: 5, margin: 10, height: 200 };
+         
+          d3.select("svg")
+              .selectAll("rect")
+              .data(datos)
+            .enter().append("rect")
+              .attr("width", config.columnWidth)
+              .attr("x", function(d,i) {
+                 return config.margin + i * (config.columnWidth + config.columnGap)
+               })
+              .attr("y", function(d,i) { return config.height - d })
+              .attr("height", function(d,i) { return d })
+              .attr("fill", function(d) {
+                return "rgb(0, 0, " + (d * 10) + ")";
+                })
+               .text(function(d) {
+                    return d;
+                })
+
+
+
+    }
+
+
 
     function drawGeneral(aux){
 
         console.log('drawGeneral');
+        cosole.log(datos);
         var suma = [];
         var cont = 0;
         var len = _preguntas.length;
